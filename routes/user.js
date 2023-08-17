@@ -13,6 +13,11 @@ const upload = multer({ storage });
 userRoutes.post("/signup", UserController.registration);
 userRoutes.post("/signin", UserController.login);
 userRoutes.get("/getUserInfo", authVerification, UserController.getProfile);
-userRoutes.put("/uploadProfileImage", authVerification, upload.single("profileImage"), UserController.uploadProfileImage);
+userRoutes.put(
+  "/uploadProfileImage",
+  authVerification,
+  upload.single("profileImage"),
+  UserController.uploadProfileImage
+);
 
 exports.userRoutes = userRoutes;
