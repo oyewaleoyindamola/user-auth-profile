@@ -43,6 +43,7 @@ class UserController {
         lastName,
         email,
         password,
+        profileImage: null,
         dateCreated: new Date().toJSON(),
         dateUpdated: null,
       });
@@ -58,6 +59,7 @@ class UserController {
           dateCreated: user.dateCreated,
           dateUpdated: user.dateUpdated,
           role: user.role,
+          profileImage: user.profileImage
         },
       });
     } catch (error) {
