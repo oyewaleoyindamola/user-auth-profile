@@ -27,7 +27,7 @@ cloudinary.config({
   api_key,
   api_secret,
 });
-
+ 
 // routes
 server.use("/api/v1/auth", userRoutes);
 
