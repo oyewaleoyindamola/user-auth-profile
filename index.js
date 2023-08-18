@@ -3,6 +3,7 @@ const mongoose = require("mongoose");
 const cors = require("cors");
 const dotenv = require("dotenv");
 const cloudinary = require("cloudinary").v2;
+const session =  require("express-session")
 
 const { userRoutes } = require("./routes/user");
 
@@ -21,12 +22,20 @@ const cloud_name = process.env.CLOUD_NAME;
 const api_key = process.env.API_KEY;
 const api_secret = process.env.API_SECRET;
 
+// session ID config
+server.use(session({
+    secret: process.env.SECRET_KEY,
+    resave: false,
+    saveUninitialized: true
+}))
+
 // cloudinary configurations
 cloudinary.config({
   cloud_name,
   api_key,
   api_secret,
 });
+
  
 // routes
 server.use("/api/v1/auth", userRoutes);

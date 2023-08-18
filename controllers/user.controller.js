@@ -4,6 +4,7 @@ const cloudinary = require("cloudinary").v2;
 
 const { User } = require("../models/users");
 const { createToken } = require("../utils/createToken");
+const logger = require("../utils/log.config");
 
 class UserController {
   static async registration(req, res) {
@@ -12,30 +13,51 @@ class UserController {
       lastName: Joi.string().min(3).required(),
       email: Joi.string().min(3).required().email(),
       password: Joi.string()
-        .pattern(new RegExp("^[a-zA-Z0-9]{3,30}$"))
-        .required(),
+        .pattern(
+          new RegExp("^(?=.*[0-9])(?=.*[a-zA-Z])(?=.*[@#$%^&+=!]).{8,}$")
+        )
+        .required()
+        .messages({
+          "string.pattern.base":
+            "Password must contain at least one number, one letter, and one special character",
+        }),
     });
 
     const { error } = userSchemaValidation.validate(req.body);
 
-    if (error)
+    if (error) {
+      logger.log(
+        "error",
+        `Client just entered a wrong detail with the following error${error.details[0].message?.replaceAll(
+          '"',
+          ""
+        )}`
+      );
       return res.status(400).send({
         responseCode: "80",
         responseMessage: error.details[0].message?.replaceAll('"', ""),
         data: null,
       });
+    }
 
     const { firstName, lastName, email, password } = req.body;
 
     try {
       let user = await User.findOne({ email });
 
-      if (user)
+      if (user) {
+        logger.log(
+          "error",
+          `${
+            firstName + " " + lastName
+          } tried creating a duplicate account with same email`
+        );
         return res.status(400).send({
           responseCode: "80",
           responseMessage: "User already exist",
           data: null,
         });
+      }
 
       const salt = await bcrypt.genSalt(10);
       user = new User({
@@ -49,6 +71,10 @@ class UserController {
       });
       user.password = await bcrypt.hash(user.password, salt);
       await user.save();
+      logger.log(
+        "info",
+        `User ${user.firstName + " " + user.lastName} just created an account`
+      );
       res.status(201).send({
         responseCode: "00",
         responseMessage: "User created successfully",
@@ -59,7 +85,7 @@ class UserController {
           dateCreated: user.dateCreated,
           dateUpdated: user.dateUpdated,
           role: user.role,
-          profileImage: user.profileImage
+          profileImage: user.profileImage,
         },
       });
     } catch (error) {
@@ -68,8 +94,11 @@ class UserController {
         responseMessage: "Internal server error",
         data: error.message,
       });
-
-      console.log(error);
+      logger.log(
+        "info",
+        `${error.message}`
+      );
+      console.log(error.message);
     }
   }
 
@@ -78,7 +107,14 @@ class UserController {
       email: Joi.string().min(3).required().email(),
       password: Joi.string()
         .required()
-        .pattern(new RegExp("^[a-zA-Z0-9]{3,30}$")),
+        .pattern(
+          new RegExp("^(?=.*[0-9])(?=.*[a-zA-Z])(?=.*[@#$%^&+=!]).{8,}$")
+        )
+        .required()
+        .messages({
+          "string.pattern.base":
+            "Password must contain at least one number, one letter, and one special character",
+        }),
     });
 
     const { error } = userSchemaValidation.validate(req.body);
@@ -183,8 +219,9 @@ class UserController {
               console.error("Error uploading image:", error);
               return res.status(500).json({ error: "Image upload failed" });
             }
-            
+
             user.profileImage = result.secure_url;
+            user.dateUpdated = new Date().toJSON();
 
             user.save();
             res.status(200).send({
@@ -214,6 +251,8 @@ class UserController {
       console.log(error);
     }
   }
+
+  static async logout() {}
 }
 
 exports.UserController = UserController;
